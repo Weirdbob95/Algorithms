@@ -6,27 +6,16 @@ import java.util.function.BiConsumer;
 public class SeamCarver {
 
     private Picture picture;
-    private int[][] red, green, blue;
+    private Color[][] colors;
     private double[][] energy;
 
     // create a seam carver object based on the given picture
     public SeamCarver(Picture picture) {
         this.picture = picture;
-        red = new int[width()][height()];
-        green = new int[width()][height()];
-        blue = new int[width()][height()];
-        forEach(0, width(), 0, height(), (x, y) -> {
-            Color c = picture.get(x, y);
-            red[x][y] = c.getRed();
-            green[x][y] = c.getGreen();
-            blue[x][y] = c.getBlue();
-        });
+        colors = new Color[width()][height()];
+        forEach(0, width(), 0, height(), (x, y) -> colors[x][y] = picture.get(x, y));
         energy = new double[width()][height()];
         forEach(0, width(), 0, height(), (x, y) -> energy[x][y] = energy(x, y));
-    }
-
-    private Color fastGet(int x, int y) {
-        return new Color(red[x][y], green[x][y], blue[x][y]);
     }
 
     private int diffSquare(int i1, int i2) {
@@ -65,7 +54,7 @@ public class SeamCarver {
         if (x == 0 || y == 0 || x == width() - 1 || y == height() - 1) {
             return 1000;
         } else {
-            return Math.sqrt(gradient(fastGet(x, y - 1), fastGet(x, y + 1)) + gradient(fastGet(x - 1, y), fastGet(x + 1, y)));
+            return Math.sqrt(gradient(colors[x][y - 1], colors[x][y + 1]) + gradient(colors[x - 1][y], colors[x + 1][y]));
         }
     }
 
@@ -138,11 +127,8 @@ public class SeamCarver {
     public void removeHorizontalSeam(int[] seam) {
         Picture p = new Picture(width(), height() - 1);
         forEach(0, width(), 0, height() - 1, (x, y) -> {
-            Color c = fastGet(x, y >= seam[x] ? y + 1 : y);
-            p.set(x, y, c);
-            red[x][y] = c.getRed();
-            green[x][y] = c.getGreen();
-            blue[x][y] = c.getBlue();
+            colors[x][y] = colors[x][y >= seam[x] ? y + 1 : y];
+            p.set(x, y, colors[x][y]);
         });
         forEach(0, width(), 0, height() - 1, (x, y) -> {
             if (Math.abs(y - seam[x]) < 2) {
@@ -158,11 +144,8 @@ public class SeamCarver {
     public void removeVerticalSeam(int[] seam) {
         Picture p = new Picture(width() - 1, height());
         forEach(0, width() - 1, 0, height(), (x, y) -> {
-            Color c = fastGet(x >= seam[y] ? x + 1 : x, y);
-            p.set(x, y, c);
-            red[x][y] = c.getRed();
-            green[x][y] = c.getGreen();
-            blue[x][y] = c.getBlue();
+            colors[x][y] = colors[x >= seam[y] ? x + 1 : x][y];
+            p.set(x, y, colors[x][y]);
         });
         forEach(0, width() - 1, 0, height(), (x, y) -> {
             if (Math.abs(x - seam[y]) < 2) {
