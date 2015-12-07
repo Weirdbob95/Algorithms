@@ -9,104 +9,73 @@ public class SAP {
 
     private final Digraph g;
 
-    private class Node {
-
-        private final Node parent;
-
-        private Node(Node parent) {
-            this.parent = parent;
-        }
-
-        private int dist() {
-            return (parent == null) ? 0 : parent.dist() + 1;
-        }
-    }
-
     public SAP(Digraph g) {
-        this.g = g;
-    }
-
-    private int search(Map<Integer, Node> vAnc, Map<Integer, Node> wAnc, Queue<Integer> toCheck, boolean returnAncestor) {
-        while (!toCheck.isEmpty()) {
-            int i = toCheck.poll();
-            Node nv = vAnc.get(i);
-            Node nw = wAnc.get(i);
-            if (nv != null && nw != null) {
-                if (returnAncestor) {
-                    return i;
-                } else {
-                    return nv.dist() + nw.dist();
-                }
-            }
-            if (nv != null) {
-                for (int i2 : g.adj(i)) {
-                    vAnc.put(i2, new Node(nv));
-                    toCheck.add(i2);
-                }
-            } else {
-                for (int i2 : g.adj(i)) {
-                    wAnc.put(i2, new Node(nw));
-                    toCheck.add(i2);
-                }
-            }
-        }
-        return -1;
+        this.g = new Digraph(g);
     }
 
     public int length(int v, int w) {
-        Map<Integer, Node> vAnc = new HashMap();
-        Map<Integer, Node> wAnc = new HashMap();
-        vAnc.put(v, new Node(null));
-        wAnc.put(w, new Node(null));
-
-        Queue<Integer> toCheck = new LinkedList();
-        toCheck.add(v);
-        toCheck.add(w);
-
-        return search(vAnc, wAnc, toCheck, false);
+        return search(Arrays.asList(v), Arrays.asList(w), false);
     }
 
     public int ancestor(int v, int w) {
-        Map<Integer, Node> vAnc = new HashMap();
-        Map<Integer, Node> wAnc = new HashMap();
-        vAnc.put(v, new Node(null));
-        wAnc.put(w, new Node(null));
-
-        Queue<Integer> toCheck = new LinkedList();
-        toCheck.add(v);
-        toCheck.add(w);
-
-        return search(vAnc, wAnc, toCheck, true);
+        return search(Arrays.asList(v), Arrays.asList(w), true);
     }
 
     public int length(Iterable<Integer> v, Iterable<Integer> w) {
-        Map<Integer, Node> vAnc = new HashMap();
-        Map<Integer, Node> wAnc = new HashMap();
-        v.forEach(i -> vAnc.put(i, new Node(null)));
-        w.forEach(i -> wAnc.put(i, new Node(null)));
-
-        Queue<Integer> toCheck = new LinkedList();
-        v.forEach(toCheck::add);
-        w.forEach(toCheck::add);
-
-        return search(vAnc, wAnc, toCheck, false);
+        return search(toList(v), toList(w), false);
     }
 
     public int ancestor(Iterable<Integer> v, Iterable<Integer> w) {
-        Map<Integer, Node> vAnc = new HashMap();
-        Map<Integer, Node> wAnc = new HashMap();
-        v.forEach(i -> vAnc.put(i, new Node(null)));
-        w.forEach(i -> wAnc.put(i, new Node(null)));
+        return search(toList(v), toList(w), true);
+    }
 
-        Queue<Integer> toCheck = new LinkedList();
-        v.forEach(toCheck::add);
-        w.forEach(toCheck::add);
+    private int search(List<Integer> v, List<Integer> w, boolean retA) {
+        int ancestor = -1, length = -1;
+        Map<Integer, Integer> vc = new HashMap(), wc = new HashMap();
 
-        return search(vAnc, wAnc, toCheck, true);
+        for (int depth = 0; (length == -1 || depth < length) && (!v.isEmpty() || !w.isEmpty()); depth++) {
+            List<Integer> toCheck = new LinkedList(v);
+            v = new LinkedList();
+            for (int n : toCheck) {
+                if (!vc.containsKey(n)) {
+                    if (wc.containsKey(n)) {
+                        int l = wc.get(n) + depth;
+                        if (length == -1 || l < length) {
+                            length = l;
+                            ancestor = n;
+                        }
+                    }
+                    vc.put(n, depth);
+                    g.adj(n).forEach(v::add);
+                }
+            }
+            toCheck = new LinkedList(w);
+            w = new LinkedList();
+            for (int n : toCheck) {
+                if (!wc.containsKey(n)) {
+                    if (vc.containsKey(n)) {
+                        int l = vc.get(n) + depth;
+                        if (length == -1 || l < length) {
+                            length = l;
+                            ancestor = n;
+                        }
+                    }
+                    wc.put(n, depth);
+                    g.adj(n).forEach(w::add);
+                }
+            }
+        }
+        return retA ? ancestor : length;
+    }
+
+    private static <T> List<T> toList(Iterable<T> i) {
+        List<T> r = new LinkedList();
+        i.forEach(r::add);
+        return r;
     }
 
     public static void main(String[] args) {
-        //args = new String[]{"wordnet/digraph1.txt"};
+        args = new String[]{"wordnet/digraph4.txt"};
 
         In in = new In(args[0]);
         Digraph G = new Digraph(in);

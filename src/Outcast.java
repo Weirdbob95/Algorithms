@@ -25,8 +25,6 @@ public class Outcast {
         for (int i = 0; i < nouns.length; i++) {
             for (int j = i + 1; j < nouns.length; j++) {
                 int cost = wordnet.distance(nouns[i], nouns[j]);
-                //System.out.println("Distance from " + nouns[i] + " to " + nouns[j] + " is " + cost);
-                System.out.println("Ancestor of " + nouns[i] + " and " + nouns[j] + " is " + wordnet.sap(nouns[i], nouns[j]));
                 costs[i] += cost;
                 costs[j] += cost;
             }
@@ -37,12 +35,11 @@ public class Outcast {
                 min = i;
             }
         }
-        //System.out.println(Arrays.toString(costs));
         return nouns[min];
     }
 
     public static void main(String[] args) {
-        //args = new String[]{"synsets.txt", "hypernyms.txt", "wordnet/outcast5.txt", "wordnet/outcast8.txt", "wordnet/outcast11.txt"};
+        args = new String[]{"wordnet/synsets.txt", "wordnet/hypernyms.txt", "wordnet/outcast5.txt"};
 
         WordNet wordnet = new WordNet(args[0], args[1]);
         Outcast outcast = new Outcast(wordnet);

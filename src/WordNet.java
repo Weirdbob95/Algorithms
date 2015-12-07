@@ -10,7 +10,6 @@ public class WordNet {
 
     private final Map<Integer, List<String>> synsets;
     private final Set<String> nouns;
-    private final Digraph G;
     private final SAP sap;
 
     public WordNet(String synsets, String hypernyms) {
@@ -20,17 +19,16 @@ public class WordNet {
                     Arrays.asList(s.substring(s.indexOf(",") + 1, s.indexOf(",", s.indexOf(",") + 1)).split(" ")));
         }
         nouns = new HashSet();
-        this.synsets.forEach((k, l) -> l.forEach(nouns::add));
+        this.synsets.values().forEach(nouns::addAll);
 
-        String[] ha = new In(hypernyms).readAllLines();
-        G = new Digraph(ha.length);
-        for (String s : ha) {
+        Digraph g = new Digraph(this.synsets.size());
+        for (String s : new In(hypernyms).readAllLines()) {
             String[] a = s.split(",");
             for (int i = 1; i < a.length; i++) {
-                G.addEdge(Integer.parseInt(a[0]), Integer.parseInt(a[i]));
+                g.addEdge(Integer.parseInt(a[0]), Integer.parseInt(a[i]));
             }
         }
-        sap = new SAP(G);
+        sap = new SAP(g);
     }
 
     public Iterable<String> nouns() {
@@ -54,7 +52,7 @@ public class WordNet {
     }
 
     public static void main(String[] args) {
-        WordNet wordnet = new WordNet("synsets.txt", "hypernyms.txt");
+        WordNet wordnet = new WordNet("wordnet/synsets15.txt", "wordnet/hypernyms15Path.txt");
         while (!StdIn.isEmpty()) {
             String n1 = StdIn.readString();
             String n2 = StdIn.readString();
