@@ -1,11 +1,12 @@
 
-import edu.princeton.cs.algs4.FlowEdge;
-import edu.princeton.cs.algs4.FlowNetwork;
 import edu.princeton.cs.algs4.In;
 import edu.princeton.cs.algs4.StdOut;
-import static java.lang.Double.POSITIVE_INFINITY;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import static java.util.stream.Collectors.toList;
+import java.util.stream.Stream;
 
 public class BaseballElimination {
 
@@ -57,33 +58,58 @@ public class BaseballElimination {
     }
 
     public boolean isEliminated(String team) {
-        int t = teams.get(team);
-        int n = teams.size();
-        FlowNetwork f = new FlowNetwork((n * n + n) / 2 + 1);
-        for (int i = 0; i < n; i++) {
-            for (int j = 0; j < i; j++) {
-                if (i != t && j != t) {
-                    int pos = n + i * i - i + j + 1;
-                    FlowEdge e = new FlowEdge(0, pos, against[i][j]);
-                    f.addEdge(e);
-                    f.addEdge(new FlowEdge(pos, i + 1, POSITIVE_INFINITY));
-                    f.addEdge(new FlowEdge(pos, j + 1, POSITIVE_INFINITY));
-                    pos++;
-                }
-            }
-        }
-        for (int i = 0; i < n; i++) {
-            f.addEdge(new FlowEdge(i + 1, n * n, wins[t] + remaining[t] - wins[i]));
-        }
+//        int t = teams.get(team);
+//        int n = teams.size();
+//        FlowNetwork f = new FlowNetwork((n * n + n) / 2 + 1);
+//        for (int i = 0; i < n; i++) {
+//            for (int j = 0; j < i; j++) {
+//                if (i != t && j != t) {
+//                    int pos = n + i * i - i + j + 1;
+//                    FlowEdge e = new FlowEdge(0, pos, against[i][j]);
+//                    f.addEdge(e);
+//                    f.addEdge(new FlowEdge(pos, i + 1, POSITIVE_INFINITY));
+//                    f.addEdge(new FlowEdge(pos, j + 1, POSITIVE_INFINITY));
+//                    pos++;
+//                }
+//            }
+//        }
+//        for (int i = 0; i < n; i++) {
+//            f.addEdge(new FlowEdge(i + 1, n * n, wins[t] + remaining[t] - wins[i]));
+//        }
 
-        return false;
+        return certificateOfElimination(team) != null;
     }
 
     public Iterable<String> certificateOfElimination(String team) {
+        int t = teams.get(team);
+        int n = teams.size();
+        Stream<boolean[]> possibilities = Stream.of(new boolean[n]);
+        for (int i = 0; i < n; i++) {
+            if (i != t) {
+                int i2 = i;
+                possibilities = possibilities.flatMap(a -> {
+                    boolean[] b = Arrays.copyOf(a, n);
+                    b[i2] = true;
+                    return Stream.of(a, b);
+                });
+            }
+        }
+
+        for (boolean[] p : (Iterable<boolean[]>) possibilities::iterator) {
+            List<String> cert = teams.keySet().stream().filter(s -> p[teams.get(s)]).collect(toList());
+            List<Integer> certi = cert.stream().map(teams::get).collect(toList());
+
+            int w = certi.stream().mapToInt(i -> wins[i]).sum();
+            int a = certi.stream().mapToInt(i -> certi.stream().mapToInt(j -> against[i][j]).sum()).sum() / 2;
+            if ((double) (w + a) / cert.size() > wins[t] + remaining[t]) {
+                return cert;
+            }
+        }
+        return null;
     }
 
     public static void main(String[] args) {
-        BaseballElimination division = new BaseballElimination(args[0]);
+        BaseballElimination division = new BaseballElimination("teams.txt");//args[0]);
         for (String team : division.teams()) {
             if (division.isEliminated(team)) {
                 StdOut.print(team + " is eliminated by the subset R = { ");
